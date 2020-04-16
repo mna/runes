@@ -77,9 +77,11 @@ func main() {
 
 		// if there are remaining arguments, treat them as strings to print the
 		// runes of.
-		args = args[lastIx+1:]
-		for _, arg := range args {
-			rs = append(rs, runesSet(arg)...)
+		if lastIx > -1 {
+			args = args[lastIx+1:]
+			for _, arg := range args {
+				rs = append(rs, runesSet(arg)...)
+			}
 		}
 	}
 
