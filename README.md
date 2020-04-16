@@ -32,6 +32,27 @@ Examples:
     runes u+1f970 0X55-0XA0 - "Some string"
 ```
 
+## Example output
+
+```
+$ ./runes u+1f970 0x12 u+2134-u+213a - Martin
+[S So] U+1F970 '🥰'   [F0 9F A5 B0] [D83E DD70] SMILING FACE WITH SMILING EYES AND THREE HEARTS
+[C Cc] U+0012         [12]          [12]        <control>
+[L Ll] U+2134 'ℴ'     [E2 84 B4]    [2134]      SCRIPT SMALL O
+[L Lo] U+2135 'ℵ'     [E2 84 B5]    [2135]      ALEF SYMBOL
+[L Lo] U+2136 'ℶ'     [E2 84 B6]    [2136]      BET SYMBOL
+[L Lo] U+2137 'ℷ'     [E2 84 B7]    [2137]      GIMEL SYMBOL
+[L Lo] U+2138 'ℸ'     [E2 84 B8]    [2138]      DALET SYMBOL
+[L Ll] U+2139 'ℹ'     [E2 84 B9]    [2139]      INFORMATION SOURCE
+[S So] U+213A '℺'     [E2 84 BA]    [213A]      ROTATED CAPITAL Q
+[L Lu] U+004D 'M'     [4D]          [4D]        LATIN CAPITAL LETTER M
+[L Ll] U+0061 'a'     [61]          [61]        LATIN SMALL LETTER A
+[L Ll] U+0072 'r'     [72]          [72]        LATIN SMALL LETTER R
+[L Ll] U+0074 't'     [74]          [74]        LATIN SMALL LETTER T
+[L Ll] U+0069 'i'     [69]          [69]        LATIN SMALL LETTER I
+[L Ll] U+006E 'n'     [6E]          [6E]        LATIN SMALL LETTER N
+```
+
 ## License
 
 The [BSD 3-Clause license][bsd].
