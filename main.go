@@ -9,6 +9,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 func main() {
@@ -16,6 +18,7 @@ func main() {
 		flagHelp  = flag.Bool("h", false, "Display this message.")
 		flagLHelp = flag.Bool("help", false, "Display this message.")
 		flagJSON  = flag.Bool("json", false, "Output JSON data.")
+		flagAll   = flag.Bool("all", false, "Print all Unicode code points.")
 	)
 	flag.Usage = usage
 	flag.Parse()
@@ -35,56 +38,77 @@ func main() {
 	args := flag.Args()
 
 	var rs []rune
-	lastIx := -1
-	for i, arg := range args {
-		if len(arg) == 0 {
-			continue
-		}
-		if arg == "-" {
-			lastIx = i
-			break
-		}
 
-		var nums []int
-		parts := strings.Split(arg, "-")
-		if len(parts) > 2 {
-			fmt.Fprintf(os.Stderr, "invalid rune argument: too many parts in range %s\n", arg)
-			os.Exit(1)
-		}
-		for _, part := range parts {
-			if strings.HasPrefix(part, "u+") || strings.HasPrefix(part, "U+") {
-				part = "0x" + part[2:]
+	if !*flagAll {
+		lastIx := -1
+		for i, arg := range args {
+			if len(arg) == 0 {
+				continue
 			}
-			n, err := strconv.ParseUint(part, 0, 32)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "invalid rune argument: %s\n", arg)
+			if arg == "-" {
+				lastIx = i
+				break
+			}
+
+			var nums []int
+			parts := strings.Split(arg, "-")
+			if len(parts) > 2 {
+				fmt.Fprintf(os.Stderr, "invalid rune argument: too many parts in range %s\n", arg)
 				os.Exit(1)
 			}
-			nums = append(nums, int(n))
+			for _, part := range parts {
+				if strings.HasPrefix(part, "u+") || strings.HasPrefix(part, "U+") {
+					part = "0x" + part[2:]
+				}
+				n, err := strconv.ParseUint(part, 0, 32)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "invalid rune argument: %s\n", arg)
+					os.Exit(1)
+				}
+				nums = append(nums, int(n))
+			}
+
+			if len(nums) == 1 {
+				rs = append(rs, rune(nums[0]))
+				continue
+			}
+			rs = append(rs, runesInRange(nums[0], nums[1])...)
 		}
 
-		if len(nums) == 1 {
-			rs = append(rs, rune(nums[0]))
-			continue
+		// if there are remaining arguments, treat them as strings to print the
+		// runes of.
+		args = args[lastIx+1:]
+		for _, arg := range args {
+			rs = append(rs, runesSet(arg)...)
 		}
-		rs = append(rs, runesInRange(nums[0], nums[1])...)
 	}
 
-	// if there are remaining arguments, treat them as strings to print the
-	// runes of.
-	args = args[lastIx+1:]
-	for _, arg := range args {
-		rs = append(rs, runesSet(arg)...)
+	count := len(rs)
+	if *flagAll {
+		count = int(unicode.MaxRune)
 	}
 
-	if err := p.printStart(os.Stdout); err != nil {
+	if err := p.printStart(os.Stdout, count); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if err := printRunes(p, rs); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+
+	if *flagAll {
+		for i := 0; i <= unicode.MaxRune; i++ {
+			if utf8.ValidRune(rune(i)) {
+				if err := printRune(p, rune(i)); err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(1)
+				}
+			}
+		}
+	} else {
+		if err := printRunes(p, rs); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
+
 	if err := p.printEnd(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
@@ -109,7 +133,7 @@ func runesSet(arg string) []rune {
 }
 
 func usage() {
-	const usageMsg = `usage: runes [-h] [-json] [CODEPOINT ...] [CPSTART-CPEND ...]`
+	const usageMsg = `usage: runes [-h] [-json] [CODEPT ...] [START-END ...] [- STRING ...]`
 	fmt.Println(usageMsg)
 }
 
@@ -128,9 +152,14 @@ The output follows the order of runes as specified on the command-line,
 the same rune will be printed multiple times if it is specified or included
 in multiple arguments.
 
+Flags:
+  -h,-help           Display this message.
+  -json              Output JSON data.
+  -all               Print all Unicode code points.
+
 Examples:
-    runes
-    runes 0x2318 40-60
+    runes -all
+    runes -json 0x2318 40-60
     runes u+1f970 0X55-0XA0 - "Some string"
 `
 	usage()

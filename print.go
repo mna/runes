@@ -16,7 +16,7 @@ import (
 )
 
 type printer interface {
-	printStart(w io.Writer) error
+	printStart(w io.Writer, count int) error
 	printRune(runeInfo) error
 	printEnd() error
 }
@@ -83,7 +83,7 @@ type textPrinter struct {
 	bw *bufio.Writer
 }
 
-func (tp *textPrinter) printStart(w io.Writer) error {
+func (tp *textPrinter) printStart(w io.Writer, count int) error {
 	tp.bw = bufio.NewWriter(w)
 	return nil
 }
@@ -97,15 +97,15 @@ func (tp *textPrinter) printRune(ri runeInfo) error {
 	}
 	fmt.Fprintf(tp.bw, "%-7s", catgs)
 
-	wd := runewidth.RuneWidth(ri.Rune)
+	//wd := runewidth.RuneWidth(ri.Rune)
 	rn := fmt.Sprintf("%#U", ri.Rune)
-	if n := len(rn) + wd - 1; n < 15 {
+	if n := runewidth.StringWidth(rn); n < 15 {
 		rn += strings.Repeat(" ", 15-n)
 	}
 	fmt.Fprintf(tp.bw, "%s", rn)
 
 	u8 := fmt.Sprintf("[% X]", ri.UTF8)
-	fmt.Fprintf(tp.bw, "%-12s", u8)
+	fmt.Fprintf(tp.bw, "%-14s", u8)
 
 	var u16 string
 	if len(ri.UTF16) == 2 {
@@ -128,9 +128,9 @@ type jsonPrinter struct {
 	bw  *bufio.Writer
 }
 
-func (jp *jsonPrinter) printStart(w io.Writer) error {
+func (jp *jsonPrinter) printStart(w io.Writer, count int) error {
 	jp.bw = bufio.NewWriter(w)
-	jp.ris = make([]runeInfo, 0, 1024) // TODO: receive a size hint?
+	jp.ris = make([]runeInfo, 0, count)
 	return nil
 }
 
