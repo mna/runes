@@ -139,14 +139,14 @@ func usage() {
 
 func help() {
 	const msg = `
-The runes command prints information about Unicode code points. Without
-argument, all code points are printed; specific code points can be requested as
-arguments, and ranges of code points are supported (e.g. 0x17-0x60). Code
-points starting with '0x' or 'u+' are considered in hexadecimal (the 'x' and
-'u' are case insensitive), otherwise the number is processed as decimal.
+The runes command prints information about Unicode code points. Specific code
+points can be requested as arguments, and ranges of code points are supported
+(e.g. 0x17-0x60). Code points starting with '0x' or 'u+' are considered in
+hexadecimal (the 'x' and 'u' are case insensitive), otherwise the number is
+treated as decimal.
 
-A single dash '-' can be used so that subsequent arguments are treated as
-strings for which each rune will be printed.
+A single dash argument '-' can be used so that subsequent arguments are treated
+as strings for which each rune will be printed.
 
 The output follows the order of runes as specified on the command-line,
 the same rune will be printed multiple times if it is specified or included

@@ -13,22 +13,27 @@ points can be provided as arguments.
 ```
 usage: runes [-h] [-json] [CODEPT ...] [START-END ...] [- STRING ...]
 
-The runes command prints information about Unicode code points. Without
-argument, all code points are printed; specific code points can be requested as
-arguments, and ranges of code points are supported (e.g. 0x17-0x60). Code
-points starting with '0x' or 'u+' are considered in hexadecimal (the 'x' and
-'u' are case insensitive), otherwise the number is processed as decimal.
+The runes command prints information about Unicode code points. Specific code
+points can be requested as arguments, and ranges of code points are supported
+(e.g. 0x17-0x60). Code points starting with '0x' or 'u+' are considered in
+hexadecimal (the 'x' and 'u' are case insensitive), otherwise the number is
+treated as decimal.
 
-A single dash '-' can be used so that subsequent arguments are treated as
-strings for which each rune will be printed.
+A single dash argument '-' can be used so that subsequent arguments are treated
+as strings for which each rune will be printed.
 
 The output follows the order of runes as specified on the command-line,
 the same rune will be printed multiple times if it is specified or included
 in multiple arguments.
 
+Flags:
+  -h,-help           Display this message.
+  -json              Output JSON data.
+  -all               Print all Unicode code points.
+
 Examples:
-    runes
-    runes 0x2318 40-60
+    runes -all
+    runes -json 0x2318 40-60
     runes u+1f970 0X55-0XA0 - "Some string"
 ```
 
