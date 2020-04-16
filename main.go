@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -34,88 +33,78 @@ func main() {
 	}
 
 	args := flag.Args()
+
 	var rs []rune
-	for _, arg := range args {
+	lastIx := -1
+	for i, arg := range args {
 		if len(arg) == 0 {
 			continue
 		}
-
-		switch p0 := arg[0]; p0 {
-		case 'u', 'U', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-			// it is either a number or a range
-			parts := []string{arg}
-			if rangeIx := strings.Index(arg, "-"); rangeIx >= 0 {
-				parts = []string{arg[:rangeIx], arg[rangeIx+1:]}
-			}
-
-		default:
-			rs = append(rs, runesSet(arg)...)
+		if arg == "-" {
+			lastIx = i
+			break
 		}
+
+		var nums []int
+		parts := strings.Split(arg, "-")
+		if len(parts) > 2 {
+			fmt.Fprintf(os.Stderr, "invalid rune argument: too many parts in range %s\n", arg)
+			os.Exit(1)
+		}
+		for _, part := range parts {
+			if strings.HasPrefix(part, "u+") || strings.HasPrefix(part, "U+") {
+				part = "0x" + part[2:]
+			}
+			n, err := strconv.ParseUint(part, 0, 32)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "invalid rune argument: %s\n", arg)
+				os.Exit(1)
+			}
+			nums = append(nums, int(n))
+		}
+
+		if len(nums) == 1 {
+			rs = append(rs, rune(nums[0]))
+			continue
+		}
+		rs = append(rs, runesInRange(nums[0], nums[1])...)
+	}
+
+	// if there are remaining arguments, treat them as strings to print the
+	// runes of.
+	args = args[lastIx+1:]
+	for _, arg := range args {
+		rs = append(rs, runesSet(arg)...)
 	}
 
 	if err := p.printStart(os.Stdout); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
+	if err := printRunes(p, rs); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
 	if err := p.printEnd(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-// decode a command-line argument into a list of runes to print,
-// and return true as second value if this is a range in the form
-// <start>-<end> (inclusive).
-func decode(arg string) (runes []rune, isRange bool, err error) {
-	if len(arg) == 0 {
-		return nil, false, nil
+func runesInRange(start, end int) []rune {
+	rs := make([]rune, 0, end-start+1)
+	for i := start; i <= end; i++ {
+		rs = append(rs, rune(i))
 	}
-
-	p0 := arg[0]
-	base := 10
-	start := 0
-	switch p0 {
-	case 'u', 'U':
-		if len(arg) == 1 || arg[1] != '+' {
-			return runesSet(arg), false, nil
-		}
-		base = 16
-		start = 2 // skip u+
-	case '0':
-		if len(arg) > 1 && arg[1] == 'x' || arg[1] == 'X' {
-			base = 16
-			start = 2 // skip 0x
-			break
-		}
-	case '1', '2', '3', '4', '5', '6', '7', '8', '9':
-		// ok, decimal number
-	default:
-		return runesSet(arg), false, nil
-	}
-
-	num, err := strconv.ParseUint(arg[start:], base, 32)
-	if err != nil {
-		return nil, false, err
-	}
-	runes = append(runes, rune(num))
-	return runes, false, nil
+	return rs
 }
 
 // returns a slice of runes where each distinct rune in arg is returned.
 func runesSet(arg string) []rune {
-	m := make(map[rune]bool)
-	for _, r := range arg {
-		m[r] = true
+	rs := make([]rune, len(arg))
+	for i, r := range arg {
+		rs[i] = r
 	}
-	rs := make([]rune, 0, len(m))
-	for k := range m {
-		rs = append(rs, k)
-	}
-	sort.Slice(rs, func(l, r int) bool {
-		lr, rr := rs[l], rs[r]
-		return lr < rr
-	})
 	return rs
 }
 
@@ -126,16 +115,23 @@ func usage() {
 
 func help() {
 	const msg = `
-The runes command prints information about Unicode code points. Without argument,
-all code points are printed; specific code points can be requested as arguments,
-and ranges of code points are supported. Code points starting with '0x' or 'u+'
-are considered in hexadecimal (the 'x' and 'u' are case insensitive), otherwise
-the number is processed as decimal.
+The runes command prints information about Unicode code points. Without
+argument, all code points are printed; specific code points can be requested as
+arguments, and ranges of code points are supported (e.g. 0x17-0x60). Code
+points starting with '0x' or 'u+' are considered in hexadecimal (the 'x' and
+'u' are case insensitive), otherwise the number is processed as decimal.
+
+A single dash '-' can be used so that subsequent arguments are treated as
+strings for which each rune will be printed.
+
+The output follows the order of runes as specified on the command-line,
+the same rune will be printed multiple times if it is specified or included
+in multiple arguments.
 
 Examples:
     runes
     runes 0x2318 40-60
-    runes u+1f970
+    runes u+1f970 0X55-0XA0 - "Some string"
 `
 	usage()
 	fmt.Println(msg)

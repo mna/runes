@@ -64,27 +64,19 @@ func info(r rune) runeInfo {
 }
 
 // print a single rune.
-func printRune(p printer, r rune) {
+func printRune(p printer, r rune) error {
 	ri := info(r)
-	p.printRune(ri)
+	return p.printRune(ri)
 }
 
 // print an explicit list of runes.
-func printRunes(p printer, rs []rune) {
+func printRunes(p printer, rs []rune) error {
 	for _, r := range rs {
-		printRune(p, r)
-	}
-}
-
-// print a range of runes, ignoring invalid ones.
-func printRange(p printer, start, end rune) {
-	for i := start; i <= end; i++ {
-		// for ranges, ignore invalid utf8 runes
-		if !utf8.ValidRune(i) {
-			continue
+		if err := printRune(p, r); err != nil {
+			return err
 		}
-		printRune(p, i)
 	}
+	return nil
 }
 
 type textPrinter struct {
