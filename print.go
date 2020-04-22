@@ -97,25 +97,37 @@ func (tp *textPrinter) printRune(ri runeInfo) error {
 	}
 	fmt.Fprintf(tp.bw, "%-7s", catgs)
 
-	//wd := runewidth.RuneWidth(ri.Rune)
 	rn := fmt.Sprintf("%#U", ri.Rune)
 	if n := runewidth.StringWidth(rn); n < 15 {
 		rn += strings.Repeat(" ", 15-n)
 	}
 	fmt.Fprintf(tp.bw, "%s", rn)
 
-	u8 := fmt.Sprintf("[% X]", ri.UTF8)
+	var u8 string
+	if ri.Valid {
+		u8 = fmt.Sprintf("[% X]", ri.UTF8)
+	} else {
+		u8 = "[!]"
+	}
 	fmt.Fprintf(tp.bw, "%-14s", u8)
 
 	var u16 string
-	if len(ri.UTF16) == 2 {
-		u16 = fmt.Sprintf("[%X %X]", ri.UTF16[0], ri.UTF16[1])
+	if ri.Valid {
+		if len(ri.UTF16) == 2 {
+			u16 = fmt.Sprintf("[%X %X]", ri.UTF16[0], ri.UTF16[1])
+		} else {
+			u16 = fmt.Sprintf("[%X]", ri.UTF16[0])
+		}
 	} else {
-		u16 = fmt.Sprintf("[%X]", ri.UTF16[0])
+		u16 = "[!]"
 	}
 	fmt.Fprintf(tp.bw, "%-12s", u16)
 
-	fmt.Fprintln(tp.bw, ri.Name)
+	if ri.Valid {
+		fmt.Fprintln(tp.bw, ri.Name)
+	} else {
+		fmt.Fprintln(tp.bw, "<invalid>")
+	}
 	return nil
 }
 
